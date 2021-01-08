@@ -44,15 +44,11 @@
             key = new THREE.Group();
             key.position.y = 3;
             key.add(gltf.scene)
-            // console.log(gltf.scene)
             for (mesh of gltf.scene.children) {
-                if (mesh.name === "Kolko")
-                    bow = mesh;
                 if (mesh.name === "Cube") {
                     shaft = mesh;
                     bow = mesh.children[0];
                 }
-
             }
 
             const cuts = new THREE.Group();
@@ -82,19 +78,16 @@
             }
             cuts.position.x = 0.04;
             key.add(cuts);
-
-            // scene.add(key);
             rotatingGroup.add(key);
         })
         loader.load("bebenek.glb", function (gltf) {
-            // scene.add(gltf.scene)
             rotatingGroup.add(gltf.scene);
         })
         loader.load("wkladka.glb", function (gltf) {
             wholeLock.add(gltf.scene)
         })
 
-        let pins, tmp;
+        let pins;
         loader.load("pin.glb", function (gltf) {
             pins = [];
             const spring = gltf.scene.children[0];
@@ -108,7 +101,6 @@
                 pinOrigin.position.set(-0.111 - cutsDepth[i] + 0.16, -i / 2.33 + 1, 0);
                 const s = (0.4 + 0.16 - cutsDepth[i]) / 0.3;
                 pinOrigin.scale.set(s, 1, 1);
-                // scene.add(pinOrigin);
                 rotatingGroup.add(pinOrigin);
 
                 const p2 = pin.clone();
@@ -143,9 +135,6 @@
         // const pointLightHelper = new THREE.PointLightHelper(pointLight, 1);
         // scene.add(pointLightHelper)
 
-        // camera.position.z = 8;
-        // camera.position.z = 6;
-
         // Object { x: -0.6061249999999999, y: 0.496375, z: 3.503175, … }
         camera.position.x = -0.60;
         camera.position.y = 0.5;
@@ -157,8 +146,6 @@
         wholeLock.position.x = 2.5;
         wholeLock.rotation.z = Math.PI / 2;
 
-        let test = 0;
-        let time = 0;
         const clock = new THREE.Clock();
 
         function animate() {
@@ -185,14 +172,12 @@
                         animationTime < (MOVE_DURATION + ROTATION_DURATION) ? 1 :
                             animationTime < (2 * MOVE_DURATION + ROTATION_DURATION) ? 2 : 3;
             // move key down
-            // if (!!key && key.position.y > 0) {
             if (!!key && phase == 0) {
                 key.position.y -= dt;
             }
 
             // rotate key after 3 seconds
             if (phase == 1) {
-                // key.rotation.y += clock.getDelta();
                 rotatingGroup.rotation.y += dt;
             }
 
@@ -200,7 +185,6 @@
             if (!!key && phase == 2) {
                 key.position.y += dt;
             }
-
 
             renderer.render(scene, camera);
         }
