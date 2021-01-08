@@ -54,25 +54,29 @@
             }
 
             const cuts = new THREE.Group();
-            for (let i = 0; i < 5; i++) {
+            for (let i = 0; i < 6; i++) {
                 const prevDepth = i > 0 ? cutsDepth[i - 1] : 0;
-                const depth = cutsDepth[i];
+                const depth = i < 5 ? cutsDepth[i] : 0.01;
 
-                const rampGeo = new THREE.BoxGeometry(depth, 1 / 2.3 - 0.3, SHAFT_THICKNESS);
-                console.log(depth, prevDepth, rampGeo.vertices)
+                const rampLength = i < 5 ? 1 / 2.3 - 0.3 : 0.1;
+                const rampGeo = new THREE.BoxGeometry(depth, rampLength, SHAFT_THICKNESS);
                 const old = rampGeo.vertices[5];
                 const old2 = rampGeo.vertices[4];
                 rampGeo.vertices[5] = new THREE.Vector3((depth - prevDepth) - depth / 2, old.y, old.z);
                 rampGeo.vertices[4] = new THREE.Vector3((depth - prevDepth) - depth / 2, old2.y, old2.z);
                 rampGeo.verticesNeedUpdate = true;
                 const ramp = new THREE.Mesh(rampGeo, shaft.material);
-                ramp.position.set(-depth / 2, -i / 2.3 + 1.217, 0);
+
+                const yPosition = i < 5 ? -i / 2.3 + 1.217 : -0.92;
+                ramp.position.set(-depth / 2, yPosition, 0);
                 cuts.add(ramp);
 
-                const boxGeometry = new THREE.BoxGeometry(depth, 0.3, SHAFT_THICKNESS);
-                const box = new THREE.Mesh(boxGeometry, shaft.material);
-                box.position.set(-depth / 2, -i / 2.3 + 1, 0)
-                cuts.add(box);
+                if (i < 5) {
+                    const boxGeometry = new THREE.BoxGeometry(depth, 0.3, SHAFT_THICKNESS);
+                    const box = new THREE.Mesh(boxGeometry, shaft.material);
+                    box.position.set(-depth / 2, -i / 2.3 + 1, 0)
+                    cuts.add(box);
+                }
             }
             cuts.position.x = 0.04;
             key.add(cuts);
