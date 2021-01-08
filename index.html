@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Klucz</title>
+    <style>
+        body {
+            margin: 0
+        }
+    </style>
+</head>
+
+<body>
+    <script src="three.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setClearColor(new THREE.Color(0xEEEEEE));  //background color and opacity
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        document.body.appendChild(renderer.domElement);
+
+        const ctr = new THREE.OrbitControls(camera, renderer.domElement);
+
+        const loader = new THREE.GLTFLoader();
+
+        const cutsDepth = shuffle([1, 2, 3, 4, 4.5].map(i => i / 35))
+        const SHAFT_THICKNESS = 0.143786;
+        const SHAFT_WIDTH = 0.44;
+        const KEY_CUT_WIDTH = 0.3;
+        const PIN_LENGTH = 0.302422;
+
+        let bow, shaft, key;
+        const rotatingGroup = new THREE.Group();
+        scene.add(rotatingGroup);
+        loader.load("klucz.glb", function (gltf) {
+            key = new THREE.Group();
+            key.position.y = 3;
+            key.add(gltf.scene)
+            // console.log(gltf.scene)
+            for (mesh of gltf.scene.children) {
+                if (mesh.name === "Kolko")
+                    bow = mesh;
+                if (mesh.name === "Cube") {
+                    shaft = mesh;
+                    bow = mesh.children[0];
+                }
+
+            }
+
+            const cuts = new THREE.Group();
+            for (let i = 0; i < 5; i++) {
+                const prevDepth = i > 0 ? cutsDepth[i - 1] : 0;
+                const depth = cutsDepth[i];
+
+                const rampGeo = new THREE.BoxGeometry(depth, 1 / 2.3 - 0.3, SHAFT_THICKNESS);
+                console.log(depth, prevDepth, rampGeo.vertices)
+                const old = rampGeo.vertices[5];
+                const old2 = rampGeo.vertices[4];
+                rampGeo.vertices[5] = new THREE.Vector3((depth - prevDepth) - depth / 2, old.y, old.z);
+                rampGeo.vertices[4] = new THREE.Vector3((depth - prevDepth) - depth / 2, old2.y, old2.z);
+                rampGeo.verticesNeedUpdate = true;
+                const ramp = new THREE.Mesh(rampGeo, shaft.material);
+                ramp.position.set(-depth / 2, -i / 2.3 + 1.217, 0);
+                cuts.add(ramp);
+
+                const boxGeometry = new THREE.BoxGeometry(depth, 0.3, SHAFT_THICKNESS);
+                const box = new THREE.Mesh(boxGeometry, shaft.material);
+                box.position.set(-depth / 2, -i / 2.3 + 1, 0)
+                cuts.add(box);
+            }
+            cuts.position.x = 0.04;
+            key.add(cuts);
+
+            // scene.add(key);
+            rotatingGroup.add(key);
+        })
+        loader.load("bebenek.glb", function (gltf) {
+            // scene.add(gltf.scene)
+            rotatingGroup.add(gltf.scene);
+        })
+        loader.load("wkladka.glb", function (gltf) {
+            scene.add(gltf.scene)
+        })
+
+        // const axesHelper = new THREE.AxesHelper(5);
+        // scene.add(axesHelper);
+
+        let pins, tmp;
+        loader.load("pin.glb", function (gltf) {
+            pins = [];
+            const spring = gltf.scene.children[0];
+            const pin = gltf.scene.children[1];
+            for (let i = 0; i < 5; i++) {
+                const pinOrigin = new THREE.Group();
+                const p = pin.clone();
+                p.position.set(-0.065, 0, 0);
+                p.rotation.z = Math.PI / 2;
+                pinOrigin.add(p);
+                pinOrigin.position.set(-0.111 - cutsDepth[i] + 0.16, -i / 2.33 + 1, 0);
+                const s = (0.4 + 0.16 - cutsDepth[i]) / 0.3;
+                pinOrigin.scale.set(s, 1, 1);
+                // scene.add(pinOrigin);
+                rotatingGroup.add(pinOrigin);
+
+                const p2 = pin.clone();
+                p2.position.set(-0.065 - 0.5, -i / 2.33 + 1, 0);
+                p2.rotation.z = Math.PI / 2;
+                scene.add(p2)
+
+                const springOrigin = new THREE.Group();
+                const sp = spring.clone();
+                sp.position.set(0, 0, 0);
+                sp.rotation.y = -Math.PI;
+                springOrigin.add(sp)
+                springOrigin.position.set(-0.065 - 1.05, -i / 2.33 + 0.95, 0);
+                scene.add(springOrigin)
+
+                pins[i] = {
+                    bottomPin: pinOrigin,
+                    topPin: p2,
+                    spring: springOrigin
+                }
+            }
+        })
+
+        const light = new THREE.AmbientLight(0x505050); // soft white light
+        scene.add(light);
+        const pointLight = new THREE.PointLight(0xffffff, 2, 100);
+        pointLight.position.set(2, 2, 2);
+        scene.add(pointLight);
+
+        // camera.position.z = 8;
+        // camera.position.z = 6;
+        camera.position.z = 4;
+        camera.position.y = 0.5;
+
+        let test = 0;
+        let time = 0;
+        const clock = new THREE.Clock();
+
+        function animate() {
+            requestAnimationFrame(animate);
+
+            // const dt = clock.getDelta();
+
+            // update pins 
+            if (!!pins) {
+                for ({ bottomPin, topPin, spring } of pins) {
+                    const depth = keyDepth(bottomPin.position.y + 0.75 - key.position.y + 0.1)
+                    bottomPin.position.x = -0.111 - depth + 0.16;
+                    topPin.position.x = bottomPin.position.x - PIN_LENGTH * bottomPin.scale.x - 0.06;
+                    spring.scale.x = (topPin.position.x - spring.position.x - PIN_LENGTH / 2 - 0.04) / 0.372;
+                }
+            }
+
+            const MOVE_DURATION = 3;
+            const ROTATION_DURATION = 2 * Math.PI;
+            const WAIT_TIME = 1;
+            const dt = clock.getDelta();
+            const animationTime = clock.elapsedTime % (2 * MOVE_DURATION + ROTATION_DURATION + WAIT_TIME) - WAIT_TIME;
+            const phase =
+                animationTime < 0 ? 3 :
+                    animationTime < MOVE_DURATION ? 0 :
+                        animationTime < (MOVE_DURATION + ROTATION_DURATION) ? 1 :
+                            animationTime < (2 * MOVE_DURATION + ROTATION_DURATION) ? 2 : 3;
+            // move key down
+            // if (!!key && key.position.y > 0) {
+            if (!!key && phase == 0) {
+                key.position.y -= dt;
+            }
+
+            // rotate key after 3 seconds
+            if (phase == 1) {
+                // key.rotation.y += clock.getDelta();
+                rotatingGroup.rotation.y += dt;
+            }
+
+            // move key up
+            if (!!key && phase == 2) {
+                key.position.y += dt;
+            }
+
+
+            renderer.render(scene, camera);
+        }
+        animate();
+
+        function keyDepth(x) { // 0 <= x <= 1.75
+            let acc = 0;
+            for (i = 4; i >= 0; i--) {
+                const depth = cutsDepth[i];
+                const nextDepth = i > 0 ? cutsDepth[i - 1] : 0;
+                const xStart = (4 - i) * (0.3 + 0.13);
+                const xEnd = (4 - (i - 1)) * (0.3 + 0.13);
+                if (xStart <= x && x <= xEnd) {
+                    if (x <= xStart + 0.3)
+                        acc += depth;
+                    else {
+                        const slope = (nextDepth - depth) / 0.13;
+                        acc += slope * (x - 0.3 - xStart) + depth;
+                    }
+                }
+            }
+
+            if (-0.13 <= x && x <= 0) {
+                const slope = cutsDepth[4] / 0.13;
+                acc += slope * (x + 0.13)
+            }
+
+            return acc;
+        }
+
+        function shuffle(a) {
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        }
+    </script>
+</body>
+
+</html>
