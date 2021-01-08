@@ -37,7 +37,9 @@
 
         let bow, shaft, key;
         const rotatingGroup = new THREE.Group();
-        scene.add(rotatingGroup);
+        const wholeLock = new THREE.Group();
+        wholeLock.add(rotatingGroup)
+        scene.add(wholeLock);
         loader.load("klucz.glb", function (gltf) {
             key = new THREE.Group();
             key.position.y = 3;
@@ -89,7 +91,7 @@
             rotatingGroup.add(gltf.scene);
         })
         loader.load("wkladka.glb", function (gltf) {
-            scene.add(gltf.scene)
+            wholeLock.add(gltf.scene)
         })
 
         // const axesHelper = new THREE.AxesHelper(5);
@@ -115,7 +117,7 @@
                 const p2 = pin.clone();
                 p2.position.set(-0.065 - 0.5, -i / 2.33 + 1, 0);
                 p2.rotation.z = Math.PI / 2;
-                scene.add(p2)
+                wholeLock.add(p2)
 
                 const springOrigin = new THREE.Group();
                 const sp = spring.clone();
@@ -123,7 +125,7 @@
                 sp.rotation.y = -Math.PI;
                 springOrigin.add(sp)
                 springOrigin.position.set(-0.065 - 1.05, -i / 2.33 + 0.95, 0);
-                scene.add(springOrigin)
+                wholeLock.add(springOrigin)
 
                 pins[i] = {
                     bottomPin: pinOrigin,
@@ -141,8 +143,15 @@
 
         // camera.position.z = 8;
         // camera.position.z = 6;
+        // camera.position.x = -2;
         camera.position.z = 4;
         camera.position.y = 0.5;
+        // camera.lookAt(1, 0, 0);
+
+
+        // wholeLock.rotation.x = Math.PI / 2;
+        wholeLock.position.x = 2;
+        wholeLock.rotation.z = Math.PI / 2;
 
         let test = 0;
         let time = 0;
@@ -150,8 +159,6 @@
 
         function animate() {
             requestAnimationFrame(animate);
-
-            // const dt = clock.getDelta();
 
             // update pins 
             if (!!pins) {
